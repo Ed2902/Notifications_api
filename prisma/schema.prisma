@@ -1,0 +1,83 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserNotificationType {
+  PUBLICATION_UNDER_REVIEW
+  PUBLICATION_APPROVED
+  PUBLICATION_BLOCKED
+  PUBLICATION_UPDATE
+  NEW_FOLLOWER
+  NEW_MESSAGE
+  NEW_MATCH
+  PROMOTION
+  SYSTEM
+}
+
+enum UserNotificationPriority {
+  LOW
+  NORMAL
+  HIGH
+  CRITICAL
+}
+
+enum UserNotificationStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+enum PushProvider {
+  EXPO
+}
+
+model UserNotification {
+  id             String                   @id @default(uuid())
+  userId         String
+  type           UserNotificationType
+  title          String
+  body           String
+  subtitle       String?
+  data           Json?
+  priority       UserNotificationPriority @default(NORMAL)
+  status         UserNotificationStatus   @default(PENDING)
+  sendPush       Boolean                  @default(true)
+  isRead         Boolean                  @default(false)
+  readAt         DateTime?
+  deliveredAt    DateTime?
+  pushAttemptedAt DateTime?
+  pushError      String?
+  sourceService  String?
+  sourceEvent    String?
+  createdAt      DateTime                 @default(now())
+  updatedAt      DateTime                 @updatedAt
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([userId, isRead, createdAt(sort: Desc)])
+  @@index([status, createdAt(sort: Desc)])
+}
+
+model NotificationDevice {
+  id           String       @id @default(uuid())
+  userId       String
+  pushProvider PushProvider @default(EXPO)
+  pushToken    String       @unique
+  deviceId     String?
+  platform     String
+  deviceName   String?
+  appVersion   String?
+  locale       String?
+  isActive     Boolean      @default(true)
+  lastSeenAt   DateTime     @default(now())
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  disabledAt   DateTime?
+
+  @@index([userId, isActive, updatedAt(sort: Desc)])
+  @@unique([userId, deviceId, pushToken])
+}
